@@ -49,3 +49,21 @@ fastboot reboot
   `adb sideload` works regardless of UI layout.
 - `prebuilt/Image.gz`, `prebuilt/dtb/q25.dtb`, `prebuilt/modules/*.ko` are tied to
   LineageOS BP4A.251205.006. If you update the base, re-extract them.
+
+
+  ## About this project
+
+This project is an **experimental attempt developed with the assistance of AI**. It should not be considered production-ready, and compatibility is not guaranteed. Always keep a backup of the original `vendor_boot.img` before flashing.
+
+The source code follows the **GNU General Public License (GPL)**, in accordance with the licenses of the upstream projects it is based on.
+
+## Why this project exists
+
+The primary goal of this project was to make it possible to install **Android 17 GSI** on the Xelex/Zinwa Q25.
+
+During testing, Google-certified Android 17 GSI images that include Google Mobile Services (GMS) could not be installed successfully. The original recovery environment also could not be used for installing LiteGapps, as the available Android 16 / LineageOS recovery was incompatible with Android 17 and `adb sideload` did not function correctly.
+
+Rather than rooting the device or modifying the running system, the objective became creating a recovery environment that matched the Android 17 kernel and vendor components, allowing GSI installation and package sideloading while keeping the device unrooted.
+
+This project is the result of that experiment and is shared for educational and development purposes. It may require additional adjustments depending on firmware versions and should be used at your own risk.
+
