@@ -109,9 +109,16 @@ BOARD_USES_METADATA_PARTITION := true
 # TWRP / OrangeFox flags  (tune these during build iterations)
 # ---------------------------------------------------------------------------
 TW_DEVICE_VERSION := Q25-prebuilt-v1
+# OrangeFox only ships the portrait_hdpi theme. This is a 720x720 SQUARE screen;
+# the auto-selector (gui/soong/makevars.go -> determineTheme) maps square -> watch_mdpi,
+# which OF does NOT ship -> theme failure. The selector reads TW_THEME from the soong
+# "twrpVarsPlugin" namespace, so we pin it there directly (the build's auto-export of
+# BoardConfig TW_* vars was not reaching soong: observed "TW_THEME: not set").
 TW_THEME := portrait_hdpi
-TARGET_SCREEN_WIDTH := 720
-TARGET_SCREEN_HEIGHT := 720
+SOONG_CONFIG_NAMESPACES += twrpVarsPlugin
+SOONG_CONFIG_twrpVarsPlugin += TW_THEME
+SOONG_CONFIG_twrpVarsPlugin_TW_THEME := portrait_hdpi
+# TARGET_SCREEN_WIDTH/HEIGHT intentionally omitted: square 720x720 breaks auto-select.
 RECOVERY_SDCARD_ON_DATA := true
 TW_EXTRA_LANGUAGES := true
 TW_DEFAULT_LANGUAGE := en
