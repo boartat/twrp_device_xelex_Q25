@@ -64,8 +64,12 @@ jobs:
           ls -la ${GITHUB_WORKSPACE}/fox/device/xelex/Q25/
 
       - name: Build
-        shell: bash    # NOT bash -e: sourcing envsetup yields benign non-zero returns
+        # Explicit args drop GitHub's default -e. envsetup/lunch legitimately return
+        # non-zero many times; -e would kill the build. pipefail is set in-script so
+        # the final exit reflects mka's status, not tee's.
+        shell: bash --noprofile --norc {0}
         run: |
+          set +e
           set -o pipefail
           cd ${GITHUB_WORKSPACE}/fox
           export ALLOW_MISSING_DEPENDENCIES=true
