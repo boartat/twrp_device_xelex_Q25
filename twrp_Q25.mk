@@ -4,7 +4,6 @@
 
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/base.mk)
 
 # Inherit from Q25 device.
 $(call inherit-product, device/xelex/Q25/device.mk)

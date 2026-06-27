@@ -126,6 +126,7 @@ TW_INPUT_BLACKLIST := "hbtp_vm"
 TARGET_USES_MKE2FS := true
 TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_CRYPTO_FBE := true
+# Far-future security patch silences AVB rollback nags. PLATFORM_VERSION is left
+# at the OF 12.1 default on purpose (forcing 16.0.0 conflicts with the 12.1 base).
 PLATFORM_SECURITY_PATCH := 2127-12-31
 VENDOR_SECURITY_PATCH := 2127-12-31
-PLATFORM_VERSION := 16.0.0

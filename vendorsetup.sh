@@ -40,4 +40,5 @@ export TARGET_DEVICE_ALT="q20_v12_factory,q20_v1_factory"
 # Backup list offered in the OF UI
 export OF_QUICK_BACKUP_LIST="/boot;/vendor_boot;"
 
-add_lunch_combo twrp_Q25-eng
+# NOTE: add_lunch_combo is obsolete; lunch combos come from COMMON_LUNCH_CHOICES
+# in AndroidProducts.mk. Do not call add_lunch_combo here (it errors under bash -e).

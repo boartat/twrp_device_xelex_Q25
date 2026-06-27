@@ -64,6 +64,7 @@ jobs:
           ls -la ${GITHUB_WORKSPACE}/fox/device/xelex/Q25/
 
       - name: Build
+        shell: bash    # NOT bash -e: sourcing envsetup yields benign non-zero returns
         run: |
           set -o pipefail
           cd ${GITHUB_WORKSPACE}/fox
@@ -73,6 +74,7 @@ jobs:
           source build/envsetup.sh
           lunch twrp_Q25-eng 2>&1 | tee ${GITHUB_WORKSPACE}/build.log
           mka ${{ github.event.inputs.BUILD_TARGET }} 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
+          exit ${PIPESTATUS[0]}
 
       - name: Error summary
         if: failure()
