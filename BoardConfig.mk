@@ -115,9 +115,8 @@ TW_DEVICE_VERSION := Q25-prebuilt-v1
 # "twrpVarsPlugin" namespace, so we pin it there directly (the build's auto-export of
 # BoardConfig TW_* vars was not reaching soong: observed "TW_THEME: not set").
 TW_THEME := portrait_hdpi
-SOONG_CONFIG_NAMESPACES += twrpVarsPlugin
-SOONG_CONFIG_twrpVarsPlugin += TW_THEME
-SOONG_CONFIG_twrpVarsPlugin_TW_THEME := portrait_hdpi
+# The soong namespace injection that OrangeFox's theme selector actually reads is
+# done with the canonical macro in device.mk (product config), not here.
 # TARGET_SCREEN_WIDTH/HEIGHT intentionally omitted: square 720x720 breaks auto-select.
 RECOVERY_SDCARD_ON_DATA := true
 TW_EXTRA_LANGUAGES := true

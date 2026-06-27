@@ -10,6 +10,16 @@ LOCAL_PATH := device/xelex/Q25
 # Soong namespace
 PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)
 
+# --- Recovery theme ---------------------------------------------------------
+# OrangeFox's theme selector lives in soong (gui/soong/makevars.go ->
+# determineTheme) and reads TW_THEME from the "twrpVarsPlugin" soong namespace.
+# On this build that namespace comes up empty (theme error "TW_THEME: not set"),
+# so register and populate it explicitly here with the canonical product-config
+# macros. OF ships only the portrait_hdpi theme, and this is a 720x720 square
+# screen whose resolution would otherwise auto-map to the (missing) watch_mdpi.
+$(call add_soong_config_namespace,twrpVarsPlugin)
+$(call add_soong_config_var_value,twrpVarsPlugin,TW_THEME,portrait_hdpi)
+
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
