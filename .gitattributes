@@ -1,0 +1,15 @@
+# Force LF on all text used by the Linux build (prevents Windows CRLF breakage)
+*.sh                    text eol=lf
+*.mk                    text eol=lf
+*.rc                    text eol=lf
+*.prop                  text eol=lf
+*.fstab                 text eol=lf
+*.yml                   text eol=lf
+modules.load.recovery   text eol=lf
+README.md               text eol=lf
+
+# Treat all recovery binaries as binary (no CRLF, no diff)
+prebuilt/Image.gz       -text -diff binary
+prebuilt/dtb/*.dtb      -text -diff binary
+prebuilt/modules/*.ko   -text -diff binary
+*.img                   -text -diff binary

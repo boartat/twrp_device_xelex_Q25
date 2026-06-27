@@ -1,0 +1,6 @@
+# Q25 recovery system properties
+ro.sf.lcd_density=193
+ro.vendor.pq.mtk_ultra_resolution_support=0
+# USB controller (MUSB) — matches stock recovery init
+sys.usb.controller=musb-hdrc
+vendor.usb.controller=musb-hdrc
