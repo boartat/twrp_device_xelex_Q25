@@ -99,7 +99,9 @@ jobs:
           : > ${GITHUB_WORKSPACE}/build.log
           # CRITICAL: lunch must NOT be piped — a pipe runs it in a subshell and the
           # exported TARGET_PRODUCT/DEVICE never reach mka (silent fallback to generic).
-          lunch twrp_Q25-eng
+          # AOSP 14 lunch combo is 3-part: <product>-<release>-<variant>. The release
+          # codename for twrp-14.1 is ap2a (build errored: "release is one of: ap2a").
+          lunch twrp_Q25-ap2a-eng
           echo "(lunch: TARGET_PRODUCT=$TARGET_PRODUCT TARGET_DEVICE=$TARGET_DEVICE)" | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= resolved build vars =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           for v in TARGET_PRODUCT TARGET_DEVICE PRODUCT_OUT PLATFORM_VERSION BOARD_BOOT_HEADER_VERSION \
