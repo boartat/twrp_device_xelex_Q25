@@ -78,6 +78,22 @@ jobs:
             echo "ERROR: libguitwrp_defaults.go not found"; exit 1
           fi
 
+      - name: Disable artifact-path enforcement
+        # The recovery installs libs into system/ and root/, which trip
+        # generic_system's artifact path requirement. In this AOSP 12 build any
+        # non-empty PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS is fatal, and our
+        # product-makefile overrides (relaxed / allowed-list) do not propagate.
+        # Force the enforcement variable empty at the source so the check is skipped.
+        run: |
+          A=$(find ${GITHUB_WORKSPACE}/fox/build/make -name 'artifact_path_requirements.mk' | head -1)
+          echo "artifact mk: $A"
+          if [ -n "$A" ]; then
+            sed -i 's|enforcement := $(PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS)|enforcement :=|' "$A"
+            echo "=== verify ==="; grep -n 'enforcement :=' "$A" || echo "PATCH DID NOT APPLY"
+          else
+            echo "ERROR: artifact_path_requirements.mk not found"; exit 1
+          fi
+
       - name: Build
         # Explicit args drop GitHub's default -e. envsetup/lunch legitimately return
         # non-zero many times; -e would kill the build. pipefail is set in-script so
