@@ -11,11 +11,11 @@ $(call inherit-product, device/xelex/Q25/device.mk)
 # Inherit common OrangeFox/TWRP config.
 $(call inherit-product, vendor/twrp/config/common.mk)
 
-# TWRP/OF recovery installs its libs (libtwrp*, libadbd, librecovery, ...) and
+# TWRP recovery installs its libs (libtwrp*, libadbd, librecovery, ...) and
 # init.recovery.*.rc into system/ and root/, which trips generic_system's artifact
-# path requirement. In this AOSP 12 build, ANY non-empty enforcement value errors
-# (the "relaxed" downgrade only exists in newer AOSP), so instead whitelist the
-# offending path prefixes so the offending-file list becomes empty.
+# path requirement. On AOSP 14 the "relaxed" downgrade IS honored, so use it; the
+# allowed-list is kept as belt-and-suspenders for the recovery-only paths.
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
 PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
     root/% \
     system/%

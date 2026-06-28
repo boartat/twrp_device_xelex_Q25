@@ -1,15 +1,15 @@
-name: Build OrangeFox (Q25)
+name: Build TWRP-14.1 (Q25)
 
 on:
   workflow_dispatch:
     inputs:
       MANIFEST_BRANCH:
-        description: "OrangeFox manifest branch"
-        default: "12.1"
+        description: "TWRP minimal-manifest branch"
+        default: "twrp-14.1"
         required: true
       BUILD_TARGET:
-        description: "make target"
-        default: "vendorbootimage"
+        description: "mka target(s)"
+        default: "adbd recoveryimage vendorbootimage"
         required: true
 
 jobs:
@@ -41,111 +41,76 @@ jobs:
           sudo apt-get install -y bc bison build-essential ccache curl flex \
             g++-multilib gcc-multilib git gnupg gperf imagemagick \
             lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool \
-            libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libwxgtk3.0-gtk3-dev \
+            libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
             libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools \
-            xsltproc zip zlib1g-dev python3 python-is-python3 openjdk-11-jdk repo
+            xsltproc zip zlib1g-dev python3 python-is-python3 repo
 
       - name: Set up git identity
         run: |
-          git config --global user.name "ofox-ci"
-          git config --global user.email "ofox-ci@users.noreply.github.com"
+          git config --global user.name "twrp-ci"
+          git config --global user.email "twrp-ci@users.noreply.github.com"
           git config --global trailer.ifexists addIfDifferent
+          git config --global advice.detachedHead false
 
-      - name: Sync OrangeFox sources
+      - name: Sync TWRP minimal sources
+        # TWRP minimal manifest (NOT OrangeFox — OF has no A14 base). twrp-14.1 = AOSP 14
+        # userspace (init/recovery/sepolicy), which our inverse-merge pre-test proved boots
+        # on this device's android12 GKI kernel (A16 LOS init booted; A14 is close).
         run: |
-          git clone https://gitlab.com/OrangeFox/sync.git ofsync
-          cd ofsync
-          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/fox
+          mkdir -p ${GITHUB_WORKSPACE}/twrp
+          cd ${GITHUB_WORKSPACE}/twrp
+          repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b ${{ github.event.inputs.MANIFEST_BRANCH }}
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+          echo "=== sanity: key trees present ==="
+          for d in build/make bootable/recovery vendor/twrp system/core; do
+            test -d $d && echo "  OK  $d" || echo "  MISSING $d"
+          done
 
       - name: Place device tree
         run: |
-          mkdir -p ${GITHUB_WORKSPACE}/fox/device/xelex/Q25
-          rsync -a --exclude='.git' --exclude='.github' device_tree/ ${GITHUB_WORKSPACE}/fox/device/xelex/Q25/
-          ls -la ${GITHUB_WORKSPACE}/fox/device/xelex/Q25/
+          mkdir -p ${GITHUB_WORKSPACE}/twrp/device/xelex/Q25
+          rsync -a --exclude='.git' --exclude='.github' device_tree/ ${GITHUB_WORKSPACE}/twrp/device/xelex/Q25/
+          ls -la ${GITHUB_WORKSPACE}/twrp/device/xelex/Q25/
 
-      - name: Force recovery theme to portrait_hdpi
-        # The soong twrpVarsPlugin namespace comes up empty on this build, so the
-        # theme selector returns "" -> "TW_THEME: not set". OF only ships
-        # portrait_hdpi and this is a 720x720 square device, so hard-pin the
-        # selector's fallback return value to portrait_hdpi.
+      - name: Force recovery theme to portrait_hdpi (non-fatal)
+        # 720x720 SQUARE panel: the auto theme selector maps it to a DPI TWRP doesn't ship.
+        # device.mk already pins TW_THEME=portrait_hdpi via the twrpVarsPlugin soong
+        # namespace; this sed is a belt-and-suspenders fallback on determineTheme. Do NOT
+        # fail the build if the source layout differs on twrp-14.1 — just warn.
         run: |
-          F=$(find ${GITHUB_WORKSPACE}/fox/bootable/recovery -name 'libguitwrp_defaults.go' | head -1)
-          echo "theme file: $F"
+          F=$(find ${GITHUB_WORKSPACE}/twrp/bootable/recovery -name 'libguitwrp_defaults.go' 2>/dev/null | head -1)
+          echo "theme file: ${F:-<not found>}"
           if [ -n "$F" ]; then
-            sed -i 's|return getMakeVars(ctx, "TW_THEME")|return "portrait_hdpi"|' "$F"
-            echo "=== verify ==="; grep -n 'return "portrait_hdpi"' "$F" || echo "PATCH DID NOT APPLY"
+            sed -i 's|return getMakeVars(ctx, "TW_THEME")|return "portrait_hdpi"|' "$F" || true
+            grep -n 'return "portrait_hdpi"' "$F" && echo "theme patch applied" || echo "WARN: theme sed did not match (relying on device.mk soong var)"
           else
-            echo "ERROR: libguitwrp_defaults.go not found"; exit 1
-          fi
-
-      - name: Disable artifact-path enforcement
-        # The recovery installs libs into system/ and root/, which trip
-        # generic_system's artifact path requirement. In this AOSP 12 build any
-        # non-empty PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS is fatal, and our
-        # product-makefile overrides (relaxed / allowed-list) do not propagate.
-        # Force the enforcement variable empty at the source so the check is skipped.
-        run: |
-          A=$(find ${GITHUB_WORKSPACE}/fox/build/make -name 'artifact_path_requirements.mk' | head -1)
-          echo "artifact mk: $A"
-          if [ -n "$A" ]; then
-            sed -i 's|enforcement := $(PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS)|enforcement :=|' "$A"
-            echo "=== verify ==="; grep -n 'enforcement :=' "$A" || echo "PATCH DID NOT APPLY"
-          else
-            echo "ERROR: artifact_path_requirements.mk not found"; exit 1
-          fi
-
-      - name: Patch recovery ramdisk rule (empty root staging)
-        # On this GKI vendor_boot device the boot ramdisk staging (TARGET_ROOT_OUT,
-        # product/Q25/root) is never created, so the recovery packaging rule's
-        # `rsync TARGET_ROOT_OUT recovery/` fails (No such file or directory). The
-        # recovery ramdisk doesn't need that base here (it's built from the device
-        # tree's recovery/root + TWRP files), so just ensure the dir exists first.
-        run: |
-          M=$(find ${GITHUB_WORKSPACE}/fox/build/make -path '*core/Makefile' | head -1)
-          echo "makefile: $M"
-          if grep -q 'rsync -a --exclude=sdcard' "$M"; then
-            sed -i 's|rsync -a --exclude=sdcard|mkdir -p $(TARGET_ROOT_OUT) \&\& rsync -a --exclude=sdcard|' "$M"
-            echo "=== verify ==="; grep -n 'mkdir -p $(TARGET_ROOT_OUT) && rsync -a --exclude=sdcard' "$M" || echo "PATCH DID NOT APPLY"
-          else
-            echo "ERROR: rsync recovery rule not found"; exit 1
+            echo "WARN: libguitwrp_defaults.go not found — relying on device.mk soong var"
           fi
 
       - name: Build
-        # Explicit args drop GitHub's default -e. envsetup/lunch legitimately return
-        # non-zero many times; -e would kill the build. pipefail is set in-script so
-        # the final exit reflects mka's status, not tee's.
         shell: bash --noprofile --norc {0}
         run: |
           set +e
           set -o pipefail
-          cd ${GITHUB_WORKSPACE}/fox
+          cd ${GITHUB_WORKSPACE}/twrp
           export ALLOW_MISSING_DEPENDENCIES=true
           export LC_ALL=C
-          export FOX_BUILD_DEVICE=Q25
           source build/envsetup.sh
-          # CRITICAL: do NOT pipe lunch (`lunch ... | tee`). The pipe runs lunch in a
-          # subshell, so its exported TARGET_PRODUCT/TARGET_DEVICE never reach the parent
-          # shell and the build silently falls back to aosp_arm/generic (ignoring this
-          # whole device tree). Run lunch directly so the env persists for mka.
           : > ${GITHUB_WORKSPACE}/build.log
+          # CRITICAL: lunch must NOT be piped — a pipe runs it in a subshell and the
+          # exported TARGET_PRODUCT/DEVICE never reach mka (silent fallback to generic).
           lunch twrp_Q25-eng
           echo "(lunch: TARGET_PRODUCT=$TARGET_PRODUCT TARGET_DEVICE=$TARGET_DEVICE)" | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= resolved build vars =================" | tee -a ${GITHUB_WORKSPACE}/build.log
-          for v in TARGET_PRODUCT TARGET_DEVICE PRODUCT_OUT BOARD_BOOT_HEADER_VERSION \
+          for v in TARGET_PRODUCT TARGET_DEVICE PRODUCT_OUT PLATFORM_VERSION BOARD_BOOT_HEADER_VERSION \
                    BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE INSTALLED_VENDOR_BOOTIMAGE_TARGET \
-                   BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT TARGET_NO_RECOVERY DEVICE_PATH; do
+                   BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT TARGET_NO_RECOVERY \
+                   BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT DEVICE_PATH; do
             echo "  $v = $(get_build_var $v 2>/dev/null)" | tee -a ${GITHUB_WORKSPACE}/build.log
           done
-          # Build recoveryimage too: vendorbootimage alone did NOT populate the recovery
-          # rootfs (no system/bin/recovery, no init -> bootloop). recoveryimage builds &
-          # installs the recovery program + init/sh/toybox into recovery/root, and for a
-          # BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT device packs them into vendor_boot.
-          mka adbd recoveryimage vendorbootimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
-          echo "================= images produced (whole tree) =================" | tee -a ${GITHUB_WORKSPACE}/build.log
-          find out/target/product -type f \( -name 'vendor_boot.img' -o -name 'recovery.img' -o -name 'boot.img' -o -name 'OrangeFox*' \) -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
-          echo "--- all *.img ---" | tee -a ${GITHUB_WORKSPACE}/build.log
+          mka ${{ github.event.inputs.BUILD_TARGET }} 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
+          echo "================= images produced =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product -name '*.img' -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
-          # Succeed if a vendor_boot.img exists anywhere in the product tree.
           if find out/target/product -name 'vendor_boot.img' | grep -q .; then
             echo "OK: vendor_boot image present" | tee -a ${GITHUB_WORKSPACE}/build.log; exit 0
           else
@@ -156,9 +121,9 @@ jobs:
         if: failure()
         run: |
           echo "================= grep'd errors ================="
-          grep -nE "error:|FAILED:|ninja: build stopped|fatal error|No rule to make|don't know how to make|Nothing to be done|cannot find|not found|Stop\.|\*\*\*" ${GITHUB_WORKSPACE}/build.log | tail -100 || true
-          echo "================= last 150 lines ================="
-          tail -150 ${GITHUB_WORKSPACE}/build.log || true
+          grep -nE "error:|FAILED:|ninja: build stopped|fatal error|No rule to make|don't know how to make|Nothing to be done|cannot find|not found|Stop\.|\*\*\*" ${GITHUB_WORKSPACE}/build.log | tail -120 || true
+          echo "================= last 200 lines ================="
+          tail -200 ${GITHUB_WORKSPACE}/build.log || true
 
       - name: Upload build log
         if: always()
@@ -172,14 +137,14 @@ jobs:
         if: always()
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/artifacts
-          cd ${GITHUB_WORKSPACE}/fox
-          find out/target/product -type f \( -name 'vendor_boot.img' -o -name 'recovery.img' -o -name 'OrangeFox*.zip' -o -name 'OrangeFox*.img' \) -exec cp -v {} ${GITHUB_WORKSPACE}/artifacts/ \; 2>/dev/null || true
+          cd ${GITHUB_WORKSPACE}/twrp
+          find out/target/product -type f \( -name 'vendor_boot.img' -o -name 'recovery.img' -o -name 'boot.img' \) -exec cp -v {} ${GITHUB_WORKSPACE}/artifacts/ \; 2>/dev/null || true
           ls -la ${GITHUB_WORKSPACE}/artifacts/ || true
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: OrangeFox-Q25
+          name: TWRP-Q25
           path: artifacts/*
           if-no-files-found: warn
