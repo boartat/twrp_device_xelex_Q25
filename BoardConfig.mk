@@ -58,8 +58,9 @@ BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
 BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
 BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT := true
 
-# No dedicated recovery partition (recovery rides in vendor_boot)
-TARGET_NO_RECOVERY := true
+# Recovery rides in vendor_boot (not in boot). Do NOT set TARGET_NO_RECOVERY:=true —
+# that disables building the recovery image entirely, leaving vendorbootimage with
+# "no work to do". The recovery resources are moved into vendor_boot above.
 BOARD_USES_RECOVERY_AS_BOOT :=
 
 # Image sizes / partitions
