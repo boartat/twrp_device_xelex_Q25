@@ -108,9 +108,11 @@ jobs:
           export FOX_BUILD_DEVICE=Q25
           source build/envsetup.sh
           lunch twrp_Q25-eng 2>&1 | tee ${GITHUB_WORKSPACE}/build.log
-          # Build both recovery targets — for recovery-in-vendor_boot the useful
-          # output is vendor_boot.img; recoveryimage is a no-op/safety net.
-          mka vendorbootimage recoveryimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
+          # Official OF fox_12.1 vendor_boot-as-recovery build command. Do NOT add
+          # 'recoveryimage' — that builds a spurious generic/arm recovery whose OF
+          # post-process fails (fox_env.sh not found, writes to /). vendorbootimage
+          # builds the Q25 arm64 vendor_boot with the OF recovery ramdisk.
+          mka adbd vendorbootimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= images produced =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product/Q25 -maxdepth 1 \( -name '*.img' -o -name 'OrangeFox*.zip' \) -printf '%10s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
           # Succeed only if a flashable recovery image actually exists.
