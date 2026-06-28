@@ -56,7 +56,11 @@ BOARD_MKBOOTIMG_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
 BOARD_USES_GENERIC_KERNEL_IMAGE := true
 BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
 BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
-BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT := true
+# NOTE: deliberately NOT setting BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT.
+# That produced a SEPARATE recovery vendor_ramdisk fragment whose rootfs was missing
+# the recovery program + init (-> bootloop). The working LineageOS build for this
+# device uses the COMBINED approach (recovery merged into the single platform vendor
+# ramdisk) via MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT alone — match that.
 
 # Recovery rides in vendor_boot (not in boot). Do NOT set TARGET_NO_RECOVERY:=true —
 # that disables building the recovery image entirely, leaving vendorbootimage with
