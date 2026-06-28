@@ -107,7 +107,13 @@ jobs:
           export LC_ALL=C
           export FOX_BUILD_DEVICE=Q25
           source build/envsetup.sh
-          lunch twrp_Q25-eng 2>&1 | tee ${GITHUB_WORKSPACE}/build.log
+          # CRITICAL: do NOT pipe lunch (`lunch ... | tee`). The pipe runs lunch in a
+          # subshell, so its exported TARGET_PRODUCT/TARGET_DEVICE never reach the parent
+          # shell and the build silently falls back to aosp_arm/generic (ignoring this
+          # whole device tree). Run lunch directly so the env persists for mka.
+          : > ${GITHUB_WORKSPACE}/build.log
+          lunch twrp_Q25-eng
+          echo "(lunch: TARGET_PRODUCT=$TARGET_PRODUCT TARGET_DEVICE=$TARGET_DEVICE)" | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= resolved build vars =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           for v in TARGET_PRODUCT TARGET_DEVICE PRODUCT_OUT BOARD_BOOT_HEADER_VERSION \
                    BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE INSTALLED_VENDOR_BOOTIMAGE_TARGET \
