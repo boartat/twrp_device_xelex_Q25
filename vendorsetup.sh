@@ -6,7 +6,9 @@
 
 # --- core: Virtual A/B + vendor_boot recovery ---
 export FOX_VIRTUAL_AB_DEVICE=1
-export OF_VANDR_DEVICE=1
+# Recovery lives in vendor_boot on this device (header v4). This is the correct OF
+# flag; it auto-sets FOX_AB_DEVICE / vendor_boot reflash handling.
+export FOX_VENDOR_BOOT_RECOVERY=1
 export OF_USE_MAGISKBOOT=1
 export OF_USE_MAGISKBOOT_FOR_ALL_PATCHES=1
 export OF_DONT_PATCH_ENCRYPTED_DEVICE=1
@@ -33,7 +35,9 @@ export OF_KEEP_DM_VERITY=1
 export OF_PATCH_AVB20=1
 
 # --- maintainer / version ---
-export FOX_VERSION="R12.1_0"
+# NB: FOX_VERSION is obsolete in fox_12.1 (orangefox.mk errors if it is set).
+# Use FOX_MAINTAINER_PATCH_VERSION (whole number) instead.
+export FOX_MAINTAINER_PATCH_VERSION=0
 export OF_MAINTAINER="self"
 export TARGET_DEVICE_ALT="q20_v12_factory,q20_v1_factory"
 

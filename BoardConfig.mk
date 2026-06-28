@@ -56,7 +56,7 @@ BOARD_MKBOOTIMG_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
 BOARD_USES_GENERIC_KERNEL_IMAGE := true
 BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
 BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
-BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT_IMG := true
+BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT := true
 
 # No dedicated recovery partition (recovery rides in vendor_boot)
 TARGET_NO_RECOVERY := true
@@ -109,6 +109,10 @@ BOARD_USES_METADATA_PARTITION := true
 # TWRP / OrangeFox flags  (tune these during build iterations)
 # ---------------------------------------------------------------------------
 TW_DEVICE_VERSION := Q25-prebuilt-v1
+# Required by OrangeFox (orangefox.mk errors if unset). Exact panel max is unknown
+# (leds-mtk-disp); 255 is the common default and only affects the brightness slider.
+TW_MAX_BRIGHTNESS := 255
+TW_DEFAULT_BRIGHTNESS := 150
 # OrangeFox only ships the portrait_hdpi theme. This is a 720x720 SQUARE screen;
 # the auto-selector (gui/soong/makevars.go -> determineTheme) maps square -> watch_mdpi,
 # which OF does NOT ship -> theme failure. The selector reads TW_THEME from the soong
