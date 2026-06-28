@@ -11,6 +11,11 @@ $(call inherit-product, device/xelex/Q25/device.mk)
 # Inherit common OrangeFox/TWRP config.
 $(call inherit-product, vendor/twrp/config/common.mk)
 
+# TWRP/OF recovery installs its libs (libtwrp*, libadbd, librecovery, ...) into
+# system/lib, which trips the strict generic_system artifact-path requirement.
+# Relax it so the recovery build can complete (standard TWRP fix).
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_DEVICE := Q25
 PRODUCT_NAME := twrp_Q25
 PRODUCT_BRAND := Xelex
