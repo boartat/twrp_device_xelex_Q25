@@ -120,8 +120,10 @@ jobs:
                    BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT TARGET_NO_RECOVERY DEVICE_PATH; do
             echo "  $v = $(get_build_var $v 2>/dev/null)" | tee -a ${GITHUB_WORKSPACE}/build.log
           done
-          # Official OF fox_12.1 vendor_boot-as-recovery command.
-          mka adbd vendorbootimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
+          # Official OF fox_12.1 vendor_boot-as-recovery command. Also build bootimage:
+          # the OF recovery ramdisk is layered on top of the boot ramdisk staging
+          # (product/Q25/root), which only gets created when the boot ramdisk is built.
+          mka adbd bootimage vendorbootimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= images produced (whole tree) =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product -type f \( -name 'vendor_boot.img' -o -name 'recovery.img' -o -name 'boot.img' -o -name 'OrangeFox*' \) -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "--- all *.img ---" | tee -a ${GITHUB_WORKSPACE}/build.log
