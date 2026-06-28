@@ -94,6 +94,22 @@ jobs:
             echo "ERROR: artifact_path_requirements.mk not found"; exit 1
           fi
 
+      - name: Patch recovery ramdisk rule (empty root staging)
+        # On this GKI vendor_boot device the boot ramdisk staging (TARGET_ROOT_OUT,
+        # product/Q25/root) is never created, so the recovery packaging rule's
+        # `rsync TARGET_ROOT_OUT recovery/` fails (No such file or directory). The
+        # recovery ramdisk doesn't need that base here (it's built from the device
+        # tree's recovery/root + TWRP files), so just ensure the dir exists first.
+        run: |
+          M=$(find ${GITHUB_WORKSPACE}/fox/build/make -path '*core/Makefile' | head -1)
+          echo "makefile: $M"
+          if grep -q 'rsync -a --exclude=sdcard' "$M"; then
+            sed -i 's|rsync -a --exclude=sdcard|mkdir -p $(TARGET_ROOT_OUT) \&\& rsync -a --exclude=sdcard|' "$M"
+            echo "=== verify ==="; grep -n 'mkdir -p $(TARGET_ROOT_OUT) && rsync -a --exclude=sdcard' "$M" || echo "PATCH DID NOT APPLY"
+          else
+            echo "ERROR: rsync recovery rule not found"; exit 1
+          fi
+
       - name: Build
         # Explicit args drop GitHub's default -e. envsetup/lunch legitimately return
         # non-zero many times; -e would kill the build. pipefail is set in-script so
@@ -120,10 +136,8 @@ jobs:
                    BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT TARGET_NO_RECOVERY DEVICE_PATH; do
             echo "  $v = $(get_build_var $v 2>/dev/null)" | tee -a ${GITHUB_WORKSPACE}/build.log
           done
-          # Official OF fox_12.1 vendor_boot-as-recovery command. Also build bootimage:
-          # the OF recovery ramdisk is layered on top of the boot ramdisk staging
-          # (product/Q25/root), which only gets created when the boot ramdisk is built.
-          mka adbd bootimage vendorbootimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
+          # Official OF fox_12.1 vendor_boot-as-recovery command.
+          mka adbd vendorbootimage 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= images produced (whole tree) =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product -type f \( -name 'vendor_boot.img' -o -name 'recovery.img' -o -name 'boot.img' -o -name 'OrangeFox*' \) -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "--- all *.img ---" | tee -a ${GITHUB_WORKSPACE}/build.log
