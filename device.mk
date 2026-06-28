@@ -23,6 +23,16 @@ $(call add_soong_config_var_value,twrpVarsPlugin,TW_THEME,portrait_hdpi)
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
+# --- Recovery rootfs base -------------------------------------------------
+# Root cause of the bootloop: with vendor_boot recovery (no standalone recovery.img,
+# INSTALLED_RECOVERYIMAGE_TARGET was empty) BUILDING_RECOVERY_IMAGE was effectively off,
+# so the recovery program + base rootfs (init, sh, toybox) were never built — only 53
+# files landed in recovery/root, no system/bin/recovery, no init -> bootloop.
+# Force the recovery image build on so the full recovery rootfs gets pulled, and also
+# request the recovery program explicitly as belt-and-suspenders.
+PRODUCT_BUILD_RECOVERY_IMAGE := true
+PRODUCT_PACKAGES += recovery
+
 # Virtual A/B snapshot daemon in the recovery ramdisk
 PRODUCT_PACKAGES += \
     snapuserd \
