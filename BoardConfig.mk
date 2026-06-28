@@ -91,9 +91,11 @@ TARGET_COPY_OUT_VENDOR := vendor
 TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/system/etc/recovery.fstab
 
-# Recovery kernel modules (prebuilt, from LOS vendor_boot recovery ramdisk)
-BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES := $(wildcard $(DEVICE_PATH)/prebuilt/modules/*.ko)
-BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD := $(strip $(shell cat $(DEVICE_PATH)/prebuilt/modules.load.recovery))
+# Recovery kernel modules: BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES did NOT get
+# the prebuilt .ko into the OF recovery fragment (verified: 0 modules in the built
+# ramdisk). Instead the modules are shipped directly under recovery/root/lib/modules
+# (the OF recovery rule copies recovery/root verbatim), matching the LineageOS layout
+# that is known to drive this panel/touch. first_stage_init loads them via modules.load.
 
 # Verified Boot (signed with testkey; bootloader is unlocked so AVB is non-enforcing)
 BOARD_AVB_ENABLE := true

@@ -11,5 +11,8 @@ README.md               text eol=lf
 # Treat all recovery binaries as binary (no CRLF, no diff)
 prebuilt/Image.gz       -text -diff binary
 prebuilt/dtb/*.dtb      -text -diff binary
-prebuilt/modules/*.ko   -text -diff binary
+*.ko                    -text -diff binary
 *.img                   -text -diff binary
+# Kernel modules dir (.ko + modules.* metadata): byte-exact, NO eol conversion.
+# CRLF in modules.load would corrupt module names and break loading.
+recovery/root/lib/modules/**  -text
