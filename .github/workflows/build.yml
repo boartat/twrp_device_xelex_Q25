@@ -63,6 +63,21 @@ jobs:
           rsync -a --exclude='.git' --exclude='.github' device_tree/ ${GITHUB_WORKSPACE}/fox/device/xelex/Q25/
           ls -la ${GITHUB_WORKSPACE}/fox/device/xelex/Q25/
 
+      - name: Force recovery theme to portrait_hdpi
+        # The soong twrpVarsPlugin namespace comes up empty on this build, so the
+        # theme selector returns "" -> "TW_THEME: not set". OF only ships
+        # portrait_hdpi and this is a 720x720 square device, so hard-pin the
+        # selector's fallback return value to portrait_hdpi.
+        run: |
+          F=$(find ${GITHUB_WORKSPACE}/fox/bootable/recovery -name 'libguitwrp_defaults.go' | head -1)
+          echo "theme file: $F"
+          if [ -n "$F" ]; then
+            sed -i 's|return getMakeVars(ctx, "TW_THEME")|return "portrait_hdpi"|' "$F"
+            echo "=== verify ==="; grep -n 'return "portrait_hdpi"' "$F" || echo "PATCH DID NOT APPLY"
+          else
+            echo "ERROR: libguitwrp_defaults.go not found"; exit 1
+          fi
+
       - name: Build
         # Explicit args drop GitHub's default -e. envsetup/lunch legitimately return
         # non-zero many times; -e would kill the build. pipefail is set in-script so
