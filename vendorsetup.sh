@@ -14,6 +14,12 @@ export OF_USE_MAGISKBOOT_FOR_ALL_PATCHES=1
 export OF_DONT_PATCH_ENCRYPTED_DEVICE=1
 
 # --- screen: 720x720 square panel ---
+# NOTE: orangefox.mk reads TW_MAX_BRIGHTNESS as a make var and errors if empty.
+# BoardConfig.mk assignments were NOT reaching orangefox.mk on this build (same class
+# of issue as TW_THEME), but env exports from vendorsetup DO reach it (proven by the
+# earlier FOX_VERSION error). So set the required brightness vars here as exports.
+export TW_MAX_BRIGHTNESS=255
+export TW_DEFAULT_BRIGHTNESS=150
 export OF_SCREEN_H=720
 export OF_STATUS_H=80
 export OF_STATUS_INDENT_LEFT=48
