@@ -161,6 +161,13 @@ jobs:
                    BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT DEVICE_PATH; do
             echo "  $v = $(get_build_var $v 2>/dev/null)" | tee -a ${GITHUB_WORKSPACE}/build.log
           done
+          # Stage task_profiles.json/cgroups.json into $(TARGET_OUT)/etc FIRST. The
+          # recovery ramdisk packaging rule (twrp_ramdisk-timestamp) does a plain
+          # `cp $(TARGET_OUT)/etc/task_profiles.json ...` but a recovery-only build never
+          # builds that libprocessgroup module (PRODUCT_PACKAGES only affects the system
+          # image we don't build) -> "cp: task_profiles.json: No such file" at 99%.
+          # Build the modules explicitly here so the file exists before the recovery pack.
+          mka task_profiles.json cgroups.json 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           mka ${{ github.event.inputs.BUILD_TARGET }} 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= images produced =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product -name '*.img' -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
