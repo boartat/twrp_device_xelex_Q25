@@ -119,6 +119,25 @@ jobs:
             echo "=== remaining '-ndk_platform' refs (should be none) ==="
             grep -rInF --include='*.mk' --include='*.bp' --include='*.go' -- '-ndk_platform' . 2>/dev/null || echo "  clean"
           fi
+
+      - name: Drop incomplete VNDK snapshots (v27-v32)
+        # soong analysis failed: prebuilts/vndk/v3{0,1,2}/arm64/Android.bp modules
+        # (libui/libmedia_omx/libstagefright_omx_utils .vndk.NN) reference
+        # generated-headers/.../gen/include dirs that don't exist in the minimal
+        # checkout -> "module source path does not exist" aborts the whole graph.
+        # A TWRP-14 (A14) recovery needs none of these old VNDK snapshots, so remove
+        # the pre-A13 snapshot trees outright. (Distinct from the '-ndk_platform' fix
+        # above: that rewrites a renamed AIDL suffix; this removes broken snapshot dirs.)
+        run: |
+          cd ${GITHUB_WORKSPACE}/twrp
+          for v in 27 28 29 30 31 32; do
+            if [ -d prebuilts/vndk/v$v ]; then
+              echo "removing prebuilts/vndk/v$v"
+              rm -rf prebuilts/vndk/v$v
+            fi
+          done
+          echo "=== remaining vndk snapshots ==="; ls prebuilts/vndk/ 2>/dev/null || echo "(none)"
+
       - name: Build
         shell: bash --noprofile --norc {0}
         run: |
