@@ -34,6 +34,21 @@ jobs:
       - name: Show free space
         run: df -h /
 
+      - name: Add 16G swapfile (prevent OOM runner shutdown)
+        # Builds #24 and #25 both died in the Build step with exit 143 /
+        # "runner received shutdown signal" (post if:always() steps skipped) — the
+        # cancellation signature of an OOM-killed runner, NOT a build error. The
+        # free-disk-space action's default swap (~4G) is too small for soong. We have
+        # ~119G free, so add a generous swapfile to give soong/ninja memory headroom.
+        run: |
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
+          sudo fallocate -l 16G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          echo "=== memory after swap ==="; free -h; swapon --show
+
       - name: Checkout device tree
         uses: actions/checkout@v4
         with:
