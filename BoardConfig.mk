@@ -142,8 +142,16 @@ TW_NO_SCREEN_BLANK := true
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 TW_INPUT_BLACKLIST := "hbtp_vm"
 TARGET_USES_MKE2FS := true
-TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_CRYPTO_FBE := true
+# CRYPTO TEMPORARILY DISABLED to get a first bootable TWRP-14 build.
+# TW_INCLUDE_CRYPTO_FBE=true makes libtar compile its fscrypt-policy-in-tar code
+# (-DUSE_FSCRYPT -DUSE_FSCRYPT_POLICY_V2), which does NOT build against A14 bionic
+# headers (libtar/fscrypt_policy.h helpers get_policy/fscrypt_policy_size missing;
+# `fscrypt_policy` resolves to bionic's struct fscrypt_policy_v1 -> "must use struct
+# tag"). Our milestone is only: does TWRP-14 userspace BOOT on this device + adb
+# sideload + fastbootd. None of that needs /data FBE decryption. Re-enable + fix the
+# fscrypt headers AFTER boot is validated.
+# TW_INCLUDE_CRYPTO := true
+# TW_INCLUDE_CRYPTO_FBE := true
 # Far-future security patch silences AVB rollback nags. PLATFORM_VERSION is left
 # at the OF 12.1 default on purpose (forcing 16.0.0 conflicts with the 12.1 base).
 PLATFORM_SECURITY_PATCH := 2127-12-31
