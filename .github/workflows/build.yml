@@ -105,7 +105,20 @@ jobs:
           else
             echo "WARN: libguitwrp_defaults.go not found — relying on device.mk soong var"
           fi
-
+      - name: Fix removed AIDL '-ndk_platform' variant refs (A12+ -> '-ndk')
+        run: |
+          cd ${GITHUB_WORKSPACE}/twrp
+          echo "=== '-ndk_platform' references in build sources (pre-patch) ==="
+          grep -rInF --include='*.mk' --include='*.bp' --include='*.go' -- '-ndk_platform' . 2>/dev/null || echo "  (none)"
+          mapfile -t FILES < <(grep -rIlF --include='*.mk' --include='*.bp' --include='*.go' -- '-ndk_platform' . 2>/dev/null || true)
+          if [ ${#FILES[@]} -eq 0 ]; then
+            echo "nothing to patch (no '-ndk_platform' in build sources)"
+          else
+            echo "rewriting '-ndk_platform' -> '-ndk' in ${#FILES[@]} file(s)"
+            sed -i 's/-ndk_platform/-ndk/g' "${FILES[@]}"
+            echo "=== remaining '-ndk_platform' refs (should be none) ==="
+            grep -rInF --include='*.mk' --include='*.bp' --include='*.go' -- '-ndk_platform' . 2>/dev/null || echo "  clean"
+          fi
       - name: Build
         shell: bash --noprofile --norc {0}
         run: |
