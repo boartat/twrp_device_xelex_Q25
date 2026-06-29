@@ -48,6 +48,14 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     fastbootd
 
+# cgroup task profiles: the recovery ramdisk packaging rule (twrp_ramdisk-timestamp)
+# copies $(TARGET_OUT)/etc/task_profiles.json into recovery/root, but in a recovery-only
+# build that module isn't staged -> "cp: task_profiles.json: No such file" at 99%.
+# Force-build it (and cgroups.json) so it lands in system/etc for the copy.
+PRODUCT_PACKAGES += \
+    task_profiles.json \
+    cgroups.json
+
 # Recovery USB-gadget bringup (MUSB controller) — from stock recovery init
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/recovery/root/init.recovery.mt6789.rc:$(TARGET_COPY_OUT_RECOVERY)/root/init.recovery.mt6789.rc
