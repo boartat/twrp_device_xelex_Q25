@@ -25,7 +25,11 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          swap-storage: true
+          # KEEP swap: build #24 died at exit 143 (SIGTERM) right at the soong
+          # bootstrap->analysis transition with 119GB disk still free -> not disk, almost
+          # certainly OOM. We don't need the ~4GB that removing swap reclaims, and the
+          # swap gives soong_build memory headroom. So do NOT reclaim swap.
+          swap-storage: false
 
       - name: Show free space
         run: df -h /
