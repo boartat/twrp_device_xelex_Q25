@@ -161,13 +161,21 @@ jobs:
                    BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT DEVICE_PATH; do
             echo "  $v = $(get_build_var $v 2>/dev/null)" | tee -a ${GITHUB_WORKSPACE}/build.log
           done
-          # Stage task_profiles.json/cgroups.json into $(TARGET_OUT)/etc FIRST. The
-          # recovery ramdisk packaging rule (twrp_ramdisk-timestamp) does a plain
+          # The recovery ramdisk packaging rule (twrp_ramdisk-timestamp) does a plain
           # `cp $(TARGET_OUT)/etc/task_profiles.json ...` but a recovery-only build never
-          # builds that libprocessgroup module (PRODUCT_PACKAGES only affects the system
-          # image we don't build) -> "cp: task_profiles.json: No such file" at 99%.
-          # Build the modules explicitly here so the file exists before the recovery pack.
-          mka task_profiles.json cgroups.json 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
+          # stages that file (neither PRODUCT_PACKAGES nor `mka task_profiles.json` landed
+          # it there -> "cp: task_profiles.json: No such file" at 99%, runs #30/#31/#32).
+          # GUARANTEED FIX: copy the source file straight into the staging path the rule
+          # reads from. A first cheap mka pass makes soong create out/, then we stage it.
+          mka task_profiles.json cgroups.json 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log || true
+          mkdir -p out/target/product/Q25/system/etc
+          if cp -f system/core/libprocessgroup/profiles/task_profiles.json \
+                   out/target/product/Q25/system/etc/task_profiles.json; then
+            echo "staged task_profiles.json -> system/etc OK" | tee -a ${GITHUB_WORKSPACE}/build.log
+          else
+            echo "WARN: could not stage task_profiles.json (source path moved?)" | tee -a ${GITHUB_WORKSPACE}/build.log
+            find . -name task_profiles.json -path '*libprocessgroup*' | tee -a ${GITHUB_WORKSPACE}/build.log
+          fi
           mka ${{ github.event.inputs.BUILD_TARGET }} 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= images produced =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product -name '*.img' -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
