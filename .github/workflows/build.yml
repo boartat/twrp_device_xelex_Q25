@@ -105,6 +105,26 @@ jobs:
           else
             echo "WARN: libguitwrp_defaults.go not found — relying on device.mk soong var"
           fi
+
+      - name: Force recovery pixel format to BGRA_8888
+        # PROVEN NEEDED: on this build the twrpVarsPlugin soong namespace does NOT reach
+        # the .go plugins (the theme only applied via the sed above, not the device.mk
+        # soong var). So libminuitwrp_defaults.go gets "" for TARGET_RECOVERY_PIXEL_FORMAT
+        # -> no -DRECOVERY_BGRA -> minui falls back to RGBA on this BGRA panel (runtime
+        # log showed GGL_PIXEL_FORMAT_RGBA_8888). Hardcode it the same way as the theme:
+        # replace the getMakeVars(...) call with the literal so pixelFormat = "BGRA_8888"
+        # -> -DRECOVERY_BGRA. (LineageOS uses BGRA_8888 and renders perfectly here.)
+        run: |
+          G=$(find ${GITHUB_WORKSPACE}/twrp/bootable/recovery -name 'libminuitwrp_defaults.go' 2>/dev/null | head -1)
+          echo "minuitwrp file: ${G:-<not found>}"
+          if [ -n "$G" ]; then
+            sed -i 's|getMakeVars(ctx, "TARGET_RECOVERY_PIXEL_FORMAT")|"BGRA_8888"|' "$G" || true
+            grep -n 'pixelFormat = ' "$G" || true
+            grep -q '"BGRA_8888"' "$G" && echo "pixel-format patch applied" || echo "WARN: pixel-format sed did not match"
+          else
+            echo "WARN: libminuitwrp_defaults.go not found"
+          fi
+
       - name: Fix removed AIDL '-ndk_platform' variant refs (A12+ -> '-ndk')
         run: |
           cd ${GITHUB_WORKSPACE}/twrp
