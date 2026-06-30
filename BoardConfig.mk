@@ -93,7 +93,14 @@ TARGET_USERIMAGES_USE_F2FS := true
 TARGET_COPY_OUT_VENDOR := vendor
 
 # Recovery
-TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
+# NO QUOTES — must match LineageOS exactly. The build derives -DRECOVERY_$(value);
+# with quotes it becomes -DRECOVERY_"BGRA_8888" (broken) so minui silently falls back
+# to RGBA, mismatching this BGRA panel -> wrong stride/format -> libc memcpy(NULL/OOB)
+# SIGSEGV at first page render + colour-swapped "glitchy" image. LineageOS A16 recovery
+# (renders perfectly on this exact DRM panel) uses the unquoted form; copy it verbatim.
+TARGET_RECOVERY_PIXEL_FORMAT := BGRA_8888
+# Match LineageOS recovery screen density too.
+TARGET_SCREEN_DENSITY := 193
 TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/system/etc/recovery.fstab
 
 # Recovery kernel modules: BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES did NOT get
