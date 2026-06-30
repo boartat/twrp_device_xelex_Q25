@@ -91,7 +91,7 @@ jobs:
           rsync -a --exclude='.git' --exclude='.github' device_tree/ ${GITHUB_WORKSPACE}/twrp/device/xelex/Q25/
           ls -la ${GITHUB_WORKSPACE}/twrp/device/xelex/Q25/
 
-      - name: Force recovery theme to portrait_hdpi (non-fatal)
+      - name: Force recovery theme to watch_mdpi (square panel, non-fatal)
         # 720x720 SQUARE panel: the auto theme selector maps it to a DPI TWRP doesn't ship.
         # device.mk already pins TW_THEME=portrait_hdpi via the twrpVarsPlugin soong
         # namespace; this sed is a belt-and-suspenders fallback on determineTheme. Do NOT
@@ -100,8 +100,8 @@ jobs:
           F=$(find ${GITHUB_WORKSPACE}/twrp/bootable/recovery -name 'libguitwrp_defaults.go' 2>/dev/null | head -1)
           echo "theme file: ${F:-<not found>}"
           if [ -n "$F" ]; then
-            sed -i 's|return getMakeVars(ctx, "TW_THEME")|return "portrait_hdpi"|' "$F" || true
-            grep -n 'return "portrait_hdpi"' "$F" && echo "theme patch applied" || echo "WARN: theme sed did not match (relying on device.mk soong var)"
+            sed -i 's|return getMakeVars(ctx, "TW_THEME")|return "watch_mdpi"|' "$F" || true
+            grep -n 'return "watch_mdpi"' "$F" && echo "theme patch applied" || echo "WARN: theme sed did not match (relying on device.mk soong var)"
           else
             echo "WARN: libguitwrp_defaults.go not found — relying on device.mk soong var"
           fi

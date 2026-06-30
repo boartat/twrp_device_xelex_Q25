@@ -18,7 +18,10 @@ PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)
 # macros. OF ships only the portrait_hdpi theme, and this is a 720x720 square
 # screen whose resolution would otherwise auto-map to the (missing) watch_mdpi.
 $(call add_soong_config_namespace,twrpVarsPlugin)
-$(call add_soong_config_var_value,twrpVarsPlugin,TW_THEME,portrait_hdpi)
+# 720x720 SQUARE panel -> use TWRP's square 'watch_mdpi' theme (portrait_hdpi 1080x1920
+# stretched onto the square panel rendered garbage and SIGSEGV'd at main-page render;
+# diagnosed live via adb on the merge image). watch_mdpi is square -> uniform upscale.
+$(call add_soong_config_var_value,twrpVarsPlugin,TW_THEME,watch_mdpi)
 
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true

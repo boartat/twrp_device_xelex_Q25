@@ -121,12 +121,11 @@ TW_DEVICE_VERSION := Q25-prebuilt-v1
 # (leds-mtk-disp); 255 is the common default and only affects the brightness slider.
 TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 150
-# OrangeFox only ships the portrait_hdpi theme. This is a 720x720 SQUARE screen;
-# the auto-selector (gui/soong/makevars.go -> determineTheme) maps square -> watch_mdpi,
-# which OF does NOT ship -> theme failure. The selector reads TW_THEME from the soong
-# "twrpVarsPlugin" namespace, so we pin it there directly (the build's auto-export of
-# BoardConfig TW_* vars was not reaching soong: observed "TW_THEME: not set").
-TW_THEME := portrait_hdpi
+# 720x720 SQUARE screen -> use TWRP's square 'watch_mdpi' theme. (Full TWRP-14 DOES ship
+# watch_mdpi, unlike OF.) portrait_hdpi (1080x1920) was non-uniformly stretched onto the
+# square panel (scale 0.667x W / 0.375x H) and SIGSEGV'd at main-page GUI render -
+# diagnosed live via adb. watch_mdpi is square -> uniform upscale, no stretch crash.
+TW_THEME := watch_mdpi
 # The soong namespace injection that OrangeFox's theme selector actually reads is
 # done with the canonical macro in device.mk (product config), not here.
 # TARGET_SCREEN_WIDTH/HEIGHT intentionally omitted: square 720x720 breaks auto-select.
