@@ -23,6 +23,17 @@ $(call add_soong_config_namespace,twrpVarsPlugin)
 # diagnosed live via adb on the merge image). watch_mdpi is square -> uniform upscale.
 $(call add_soong_config_var_value,twrpVarsPlugin,TW_THEME,watch_mdpi)
 
+# Recovery pixel format ALSO reaches libminuitwrp via the same twrpVarsPlugin soong
+# namespace: minuitwrp/libminuitwrp_defaults.go does
+#   strings.Replace(getMakeVars(ctx,"TARGET_RECOVERY_PIXEL_FORMAT"),"\"","",-1)
+#   switch { case "BGRA_8888": cflags += "-DRECOVERY_BGRA" ... }
+# and getMakeVars reads ctx.Config().VendorConfig("twrpVarsPlugin"). Setting it only as
+# a BoardConfig make var (as we did) leaves IsSet()=false -> "" -> no -DRECOVERY_BGRA ->
+# minui falls back to RGBA (runtime log showed ARGB/RGBA) -> wrong format vs this BGRA
+# panel -> memcpy SIGSEGV at first page render + colour glitch. Register it here so the
+# soong plugin actually receives BGRA_8888 (quotes are stripped by the .go, so unquoted).
+$(call add_soong_config_var_value,twrpVarsPlugin,TARGET_RECOVERY_PIXEL_FORMAT,BGRA_8888)
+
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
