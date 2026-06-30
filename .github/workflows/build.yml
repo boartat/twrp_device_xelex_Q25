@@ -176,6 +176,13 @@ jobs:
             echo "WARN: could not stage task_profiles.json (source path moved?)" | tee -a ${GITHUB_WORKSPACE}/build.log
             find . -name task_profiles.json -path '*libprocessgroup*' | tee -a ${GITHUB_WORKSPACE}/build.log
           fi
+          # vendor_boot packing runs `mkbootfs out/.../vendor_ramdisk` but that dir is
+          # never created (this recovery device has no platform vendor-ramdisk content)
+          # -> "mkbootfs: cannot open directory vendor_ramdisk". Pre-create it so mkbootfs
+          # emits an (empty) vendor_ramdisk.cpio.gz and the recovery fragment carries the
+          # actual recovery (BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT).
+          mkdir -p out/target/product/Q25/vendor_ramdisk
+          echo "ensured out/.../vendor_ramdisk dir exists" | tee -a ${GITHUB_WORKSPACE}/build.log
           mka ${{ github.event.inputs.BUILD_TARGET }} 2>&1 | tee -a ${GITHUB_WORKSPACE}/build.log
           echo "================= images produced =================" | tee -a ${GITHUB_WORKSPACE}/build.log
           find out/target/product -name '*.img' -printf '%12s  %p\n' 2>/dev/null | tee -a ${GITHUB_WORKSPACE}/build.log
